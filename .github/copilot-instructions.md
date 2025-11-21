@@ -1,6 +1,11 @@
 - Don't add code comments.
 - Don't add code comments.
 - Don't add code comments.
+- Follow the file naming convention of <name>.<purpose>.<extension>.
+- Follow the file naming convention of <name>.<purpose>.<extension>.
 - Always read the src.md and architecture.md in the docs dir.
 - Pretty Putty is a more user friendly version of PuTTY.
 - Pretty Putty is a more user friendly version of PuTTY.
+- Break react components into smaller components and pass props.
+- Break react components into smaller components and pass props.
+- Break react components into smaller components and pass props.
