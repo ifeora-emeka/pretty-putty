@@ -62,26 +62,25 @@ export const LoginComponent: React.FC = () => {
         : null;
 
     return (
-        <div className="relative min-h-screen w-full overflow-hidden">
-            <Image
-                src="/vercel.svg"
-                alt="background"
-                fill
-                className="absolute inset-0 object-cover opacity-20"
-                quality={75}
-            />
-
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/30 via-purple-600/30 to-pink-600/30" />
-
-            <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
-                <div className="w-full max-w-md">
-                    <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-3xl shadow-2xl p-8 space-y-8">
-                        <div className="space-y-2 text-center">
-                            <h1 className="text-3xl font-bold text-white">Pretty Putty</h1>
-                            <p className="text-white/70">SSH Connection Manager</p>
-                        </div>
-
-                        <div className="rounded-2xl bg-white/5 border border-white/10 p-6">
+        <div className="min-h-screen w-full flex items-center justify-center bg-background p-6">
+            <div className="w-full max-w-md">
+                <div className="mb-8 text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                        <Image
+                            src="/logo.jpg"
+                            alt="Pretty Putty Logo"
+                            width={64}
+                            height={64}
+                            className="rounded-lg"
+                            priority
+                        />
+                    </div>
+                    <h1 className="text-3xl font-semibold text-foreground mb-2">Pretty Putty</h1>
+                    <p className="text-sm text-muted-foreground">SSH Connection Manager</p>
+                </div>
+                
+                <div className="bg-card rounded-lg border border-border shadow-sm">
+                    <div className="p-6">
                             {view === "list" && (
                                 <ConnectionListComponent
                                     connections={connections}
@@ -108,7 +107,6 @@ export const LoginComponent: React.FC = () => {
                                     onBack={handleBackToList}
                                 />
                             )}
-                        </div>
                     </div>
                 </div>
             </div>

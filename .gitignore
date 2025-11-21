@@ -19,7 +19,7 @@
 
 # electron-builder
 /dist/
-
+copilot-instructions.md
 # production
 /build
 

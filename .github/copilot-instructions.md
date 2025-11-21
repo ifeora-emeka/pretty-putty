@@ -9,3 +9,6 @@
 - Break react components into smaller components and pass props.
 - Break react components into smaller components and pass props.
 - Break react components into smaller components and pass props.
+- Make sure the UI is beautiful and uses shadcn colors.
+- Make sure the UI is beautiful and uses shadcn colors.
+- Make sure the UI is beautiful and uses shadcn colors.

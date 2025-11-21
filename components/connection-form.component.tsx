@@ -57,20 +57,20 @@ export const ConnectionFormComponent: React.FC<ConnectionFormComponentProps> = (
     const isExistingConnection = !!connection;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             <button
                 onClick={onBack}
-                className="flex items-center gap-2 text-white/70 hover:text-white transition-colors"
+                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group"
             >
-                <ArrowLeft className="w-4 h-4" />
-                Back
+                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                <span className="text-sm">Back to connections</span>
             </button>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4">
                 {!isExistingConnection && (
-                    <>
+                    <>  
                         <div className="space-y-2">
-                            <Label htmlFor="connection-name" className="text-white">
+                            <Label htmlFor="connection-name" className="text-sm font-medium">
                                 Connection Name
                             </Label>
                             <Input
@@ -79,14 +79,13 @@ export const ConnectionFormComponent: React.FC<ConnectionFormComponentProps> = (
                                 placeholder="e.g., Production Server"
                                 value={connectionName}
                                 onChange={(e) => setConnectionName(e.target.value)}
-                                className="bg-white/10 backdrop-blur border border-white/20 text-white placeholder:text-white/40 focus:border-white/40"
                                 required
                             />
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="host" className="text-white">
+                                <Label htmlFor="host" className="text-sm font-medium">
                                     Host
                                 </Label>
                                 <Input
@@ -95,12 +94,11 @@ export const ConnectionFormComponent: React.FC<ConnectionFormComponentProps> = (
                                     placeholder="example.com"
                                     value={host}
                                     onChange={(e) => setHost(e.target.value)}
-                                    className="bg-white/10 backdrop-blur border border-white/20 text-white placeholder:text-white/40 focus:border-white/40"
                                     required
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="port" className="text-white">
+                                <Label htmlFor="port" className="text-sm font-medium">
                                     Port
                                 </Label>
                                 <Input
@@ -109,14 +107,13 @@ export const ConnectionFormComponent: React.FC<ConnectionFormComponentProps> = (
                                     placeholder="22"
                                     value={port}
                                     onChange={(e) => setPort(e.target.value)}
-                                    className="bg-white/10 backdrop-blur border border-white/20 text-white placeholder:text-white/40 focus:border-white/40"
                                     required
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="username" className="text-white">
+                            <Label htmlFor="username" className="text-sm font-medium">
                                 Username
                             </Label>
                             <Input
@@ -125,7 +122,6 @@ export const ConnectionFormComponent: React.FC<ConnectionFormComponentProps> = (
                                 placeholder="admin"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                className="bg-white/10 backdrop-blur border border-white/20 text-white placeholder:text-white/40 focus:border-white/40"
                                 required
                             />
                         </div>
@@ -133,27 +129,27 @@ export const ConnectionFormComponent: React.FC<ConnectionFormComponentProps> = (
                 )}
 
                 {isExistingConnection && (
-                    <div className="space-y-4 p-4 bg-white/5 rounded-lg border border-white/10">
-                        <h3 className="text-white font-medium">{connectionName}</h3>
+                    <div className="space-y-3 p-4 bg-muted/50 rounded-lg border border-border">
+                        <h3 className="font-semibold">{connectionName}</h3>
                         <div className="space-y-2 text-sm">
-                            <div className="flex justify-between text-white/70">
-                                <span>Host:</span>
-                                <span className="text-white">{host}</span>
+                            <div className="flex justify-between items-center text-muted-foreground">
+                                <span>Host</span>
+                                <span className="text-foreground font-medium">{host}</span>
                             </div>
-                            <div className="flex justify-between text-white/70">
-                                <span>Port:</span>
-                                <span className="text-white">{port}</span>
+                            <div className="flex justify-between items-center text-muted-foreground">
+                                <span>Port</span>
+                                <span className="text-foreground font-medium">{port}</span>
                             </div>
-                            <div className="flex justify-between text-white/70">
-                                <span>Username:</span>
-                                <span className="text-white">{username}</span>
+                            <div className="flex justify-between items-center text-muted-foreground">
+                                <span>Username</span>
+                                <span className="text-foreground font-medium">{username}</span>
                             </div>
                         </div>
                     </div>
                 )}
 
                 <div className="space-y-2">
-                    <Label htmlFor="password" className="text-white">
+                    <Label htmlFor="password" className="text-sm font-medium">
                         Password
                     </Label>
                     <Input
@@ -162,21 +158,19 @@ export const ConnectionFormComponent: React.FC<ConnectionFormComponentProps> = (
                         placeholder="Enter password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="bg-white/10 backdrop-blur border border-white/20 text-white placeholder:text-white/40 focus:border-white/40"
                         required
                     />
                 </div>
 
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
                     <Checkbox
                         id="remember-24h"
                         checked={rememberFor24h}
                         onCheckedChange={(checked) => setRememberFor24h(checked as boolean)}
-                        className="border-white/30 bg-white/10"
                     />
                     <Label
                         htmlFor="remember-24h"
-                        className="text-white/80 cursor-pointer font-normal"
+                        className="cursor-pointer text-sm font-normal"
                     >
                         Remember password for 24 hours
                     </Label>
@@ -185,7 +179,7 @@ export const ConnectionFormComponent: React.FC<ConnectionFormComponentProps> = (
                 <Button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full bg-white/20 hover:bg-white/30 text-white border border-white/30 disabled:opacity-50"
+                    className="w-full"
                 >
                     {isLoading ? "Connecting..." : "Connect"}
                 </Button>
