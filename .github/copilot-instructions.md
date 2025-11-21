@@ -1,0 +1,6 @@
+- Don't add code comments.
+- Don't add code comments.
+- Don't add code comments.
+- Always read the src.md and architecture.md in the docs dir.
+- Pretty Putty is a more user friendly version of PuTTY.
+- Pretty Putty is a more user friendly version of PuTTY.
