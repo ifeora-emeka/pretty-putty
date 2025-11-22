@@ -20,26 +20,45 @@ export class ConnectionIpcManager {
     ipcMain.handle(
       "connection:create-session",
       async (event, data: CreateConnectionRequest) => {
+        console.log("[ConnectionIpcManager] IPC create-session received:", {
+          connectionId: data.connectionId,
+          host: data.host,
+          port: data.port,
+          username: data.username,
+          hasPassword: !!data.password,
+        });
+
         try {
+          console.log("[ConnectionIpcManager] Creating session object...");
           const session = this.connectionManager.createSession(
             data.connectionId,
             data.host,
             data.port,
             data.username
           );
+          console.log("[ConnectionIpcManager] Session object created");
 
           if (data.password) {
+            console.log("[ConnectionIpcManager] Attempting SSH connection...");
             await session.connectSSH(data.password);
+            console.log("[ConnectionIpcManager] SSH connection successful");
           }
 
+          console.log("[ConnectionIpcManager] Setting active connection");
           this.connectionManager.setActiveConnection(data.connectionId);
 
+          console.log("[ConnectionIpcManager] Returning success response");
           return {
             success: true,
             connectionId: data.connectionId,
             message: "Session created and connected",
           };
         } catch (error) {
+          console.error("[ConnectionIpcManager] create-session error:", {
+            error,
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+          });
           return {
             success: false,
             error: error instanceof Error ? error.message : "Unknown error",

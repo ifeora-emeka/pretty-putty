@@ -90,8 +90,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const connect = useCallback(async (connection: StoredConnection, password: string, rememberFor24h: boolean) => {
     setIsLoading(true);
     try {
-      await AuthElectronService.saveConnectionToStorage(connection, password, rememberFor24h);
 
+      console.log("[AuthContext] Saving connection to storage...");
+      await AuthElectronService.saveConnectionToStorage(connection, password, rememberFor24h);
+      console.log("[AuthContext] Connection saved to storage successfully");
+
+      console.log("[AuthContext] Creating SSH session...");
       const sessionResult = await AuthElectronService.createSession(
         connection.id,
         connection.host,
@@ -99,17 +103,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         connection.username,
         password
       );
+      console.log("[AuthContext] SSH session creation result:", sessionResult);
 
       if (!sessionResult.success) {
+        console.error("[AuthContext] Session creation failed:", sessionResult.error);
         throw new Error(sessionResult.error || "Failed to create SSH session");
       }
 
+      console.log("[AuthContext] Updating last connected timestamp...");
       await AuthElectronService.updateLastConnected(connection.id);
+      console.log("[AuthContext] Connection authenticated successfully");
 
       setIsAuthenticated(true);
       setSelectedConnection(connection);
     } catch (error) {
-      console.error("Connection failed:", error);
+      console.error("[AuthContext] Connection failed:", {
+        error,
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       throw error;
     } finally {
       setIsLoading(false);

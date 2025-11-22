@@ -27,11 +27,10 @@ export const ConnectionHeaderComponent: React.FC<ConnectionHeaderProps> = ({
     const router = useRouter();
     const { disconnect } = useAuth();
     const { connectionId } = useConnection();
-    const { metrics, osInfo, hardwareInfo, isHealthy, isLoading } = useSystemStatus({
+    const { metrics, isHealthy, isLoading } = useSystemStatus({
         connectionId,
-        pollInterval: 5000,
+        pollInterval: 3000,
         enabled: !!connectionId,
-        useRemote: true,
     });
     const [isDisconnecting, setIsDisconnecting] = useState(false);
 
@@ -50,6 +49,10 @@ export const ConnectionHeaderComponent: React.FC<ConnectionHeaderProps> = ({
     const cpu = metrics?.cpu ?? 0;
     const memory = metrics?.memory ?? 0;
     const disk = metrics?.disk ?? 0;
+    const memoryUsed = metrics?.memoryUsed ?? 0;
+    const memoryTotal = metrics?.memoryTotal ?? 0;
+    const diskUsed = metrics?.diskUsed ?? 0;
+    const diskTotal = metrics?.diskTotal ?? 0;
 
     return (
         <div className="border-b border-border bg-card">
@@ -136,62 +139,72 @@ export const ConnectionHeaderComponent: React.FC<ConnectionHeaderProps> = ({
                                             {username}
                                         </span>
                                     </div>
+                                    {metrics?.memoryTotal && (
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">RAM</span>
+                                            <span className="text-foreground font-medium">
+                                                {memoryUsed}GB / {memoryTotal}GB
+                                            </span>
+                                        </div>
+                                    )}
+                                    {metrics?.diskTotal && (
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Storage</span>
+                                            <span className="text-foreground font-medium">
+                                                {diskUsed}GB / {diskTotal}GB
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
-                            {osInfo && (
+                            {metrics && (
                                 <div className="pt-2 border-t border-border">
                                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                                        Operating System
+                                        VPS Information
                                     </p>
                                     <div className="space-y-1 text-xs">
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Type</span>
-                                            <span className="text-foreground font-medium">{osInfo.type}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Platform</span>
-                                            <span className="text-foreground font-medium">{osInfo.platform}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Release</span>
-                                            <span className="text-foreground font-medium text-right">{osInfo.release}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Architecture</span>
-                                            <span className="text-foreground font-medium">{osInfo.arch}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Hostname</span>
-                                            <span className="text-foreground font-medium">{osInfo.hostname}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {hardwareInfo && (
-                                <div className="pt-2 border-t border-border">
-                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                                        Hardware
-                                    </p>
-                                    <div className="space-y-1 text-xs">
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">CPU</span>
-                                            <span className="text-foreground font-medium text-right">{hardwareInfo.cpuModel}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Cores</span>
-                                            <span className="text-foreground font-medium">{hardwareInfo.cpuCores}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Total RAM</span>
-                                            <span className="text-foreground font-medium">{hardwareInfo.totalMemory} GB</span>
-                                        </div>
-                                        {hardwareInfo.networkInterfaces.length > 0 && (
+                                        {metrics.osName && (
+                                            <div className="flex justify-between gap-2">
+                                                <span className="text-muted-foreground">OS</span>
+                                                <span className="text-foreground font-medium text-right">{metrics.osName}</span>
+                                            </div>
+                                        )}
+                                        {metrics.kernel && (
+                                            <div className="flex justify-between gap-2">
+                                                <span className="text-muted-foreground">Kernel</span>
+                                                <span className="text-foreground font-medium text-right">{metrics.kernel}</span>
+                                            </div>
+                                        )}
+                                        {metrics.hostname && (
+                                            <div className="flex justify-between gap-2">
+                                                <span className="text-muted-foreground">Hostname</span>
+                                                <span className="text-foreground font-medium">{metrics.hostname}</span>
+                                            </div>
+                                        )}
+                                        {metrics.uptime && (
+                                            <div className="flex justify-between gap-2">
+                                                <span className="text-muted-foreground">Uptime</span>
+                                                <span className="text-foreground font-medium text-right">{metrics.uptime}</span>
+                                            </div>
+                                        )}
+                                        {metrics.cpuModel && (
+                                            <div className="flex justify-between gap-2">
+                                                <span className="text-muted-foreground">CPU</span>
+                                                <span className="text-foreground font-medium text-right">{metrics.cpuModel}</span>
+                                            </div>
+                                        )}
+                                        {metrics.cpuCores && (
                                             <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Network</span>
-                                                <span className="text-foreground font-medium text-right">
-                                                    {hardwareInfo.networkInterfaces[0].address}
+                                                <span className="text-muted-foreground">Cores</span>
+                                                <span className="text-foreground font-medium">{metrics.cpuCores}</span>
+                                            </div>
+                                        )}
+                                        {metrics.loadAverage && (
+                                            <div className="flex justify-between gap-2">
+                                                <span className="text-muted-foreground">Load Avg</span>
+                                                <span className="text-foreground font-medium">
+                                                    {metrics.loadAverage[0].toFixed(2)}, {metrics.loadAverage[1].toFixed(2)}, {metrics.loadAverage[2].toFixed(2)}
                                                 </span>
                                             </div>
                                         )}

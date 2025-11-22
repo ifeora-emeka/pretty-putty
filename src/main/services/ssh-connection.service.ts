@@ -27,58 +27,104 @@ export class SSHConnectionService extends EventEmitter {
     this.connectionId = connectionId;
     this.config = config;
     this.client = new Client();
-    this.setupEventHandlers();
-  }
-
-  private setupEventHandlers(): void {
-    this.client.on("ready", () => {
-      this.isConnected = true;
-      this.emit("ready");
-    });
-
-    this.client.on("error", (err: Error) => {
-      this.isConnected = false;
-      this.emit("error", err);
-    });
-
-    this.client.on("close", () => {
-      this.isConnected = false;
-      this.sftpClient = null;
-      this.emit("close");
-    });
-
-    this.client.on("end", () => {
-      this.isConnected = false;
-      this.emit("end");
-    });
   }
 
   async connect(): Promise<void> {
+    console.log("[SSHConnectionService] connect() called");
+    console.log("[SSHConnectionService] Connection details:", {
+      connectionId: this.connectionId,
+      host: this.config.host,
+      port: this.config.port,
+      username: this.config.username,
+      hasPassword: !!this.config.password,
+      passwordLength: this.config.password?.length || 0,
+    });
+
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
+        console.error("[SSHConnectionService] Connection timeout (30s) - closing client");
         this.client.end();
         reject(new Error("Connection timeout after 30 seconds"));
       }, 30000);
 
       this.client.once("ready", () => {
+        console.log("[SSHConnectionService] SSH 'ready' event - connection established");
         clearTimeout(timeout);
+        this.isConnected = true;
+        this.emit("ready");
         resolve();
       });
 
       this.client.once("error", (err) => {
+        console.error("[SSHConnectionService] SSH connection error:", {
+          code: (err as any).code,
+          message: err.message,
+          errno: (err as any).errno,
+          level: (err as any).level,
+        });
         clearTimeout(timeout);
+        this.isConnected = false;
+        this.emit("error", err);
         reject(err);
       });
 
-      this.client.connect({
+      this.client.once("close", () => {
+        console.log("[SSHConnectionService] SSH connection closed");
+        this.isConnected = false;
+        this.sftpClient = null;
+        this.emit("close");
+      });
+
+      this.client.once("end", () => {
+        console.log("[SSHConnectionService] SSH connection ended");
+        this.isConnected = false;
+        this.emit("end");
+      });
+
+      this.client.on("keyboard-interactive", (name, instructions, lang, prompts, finish) => {
+        console.log("[SSHConnectionService] Keyboard-interactive auth triggered");
+        console.log("[SSHConnectionService] Name:", name);
+        console.log("[SSHConnectionService] Instructions:", instructions);
+        console.log("[SSHConnectionService] Prompts:", prompts);
+        finish(prompts.map(() => this.config.password));
+      });
+
+      this.client.on("banner", (message) => {
+        console.log("[SSHConnectionService] Server banner:", message);
+      });
+
+      this.client.on("handshake", (negotiated) => {
+        console.log("[SSHConnectionService] SSH handshake completed:", negotiated);
+      });
+
+      this.client.on("greeting", (greeting) => {
+        console.log("[SSHConnectionService] Server greeting:", greeting);
+      });
+
+      const connectConfig = {
         host: this.config.host,
         port: this.config.port,
         username: this.config.username,
-        password: this.config.password,
+        tryKeyboard: true,
         readyTimeout: 30000,
         keepaliveInterval: 10000,
         keepaliveCountMax: 3,
+        debug: (info: string) => {
+          console.log("[SSHConnectionService] SSH2 DEBUG:", info);
+        },
+      };
+
+      console.log("[SSHConnectionService] SSH2 connect config:", {
+        host: connectConfig.host,
+        port: connectConfig.port,
+        username: connectConfig.username,
+        tryKeyboard: connectConfig.tryKeyboard,
+        readyTimeout: connectConfig.readyTimeout,
       });
+
+      console.log("[SSHConnectionService] Calling client.connect()...");
+      this.client.connect(connectConfig);
+      console.log("[SSHConnectionService] client.connect() called, waiting for response...");
     });
   }
 

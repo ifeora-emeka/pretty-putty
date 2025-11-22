@@ -108,11 +108,21 @@ export class AuthElectronService {
     username: string,
     password: string
   ): Promise<{ success: boolean; connectionId?: string; error?: string }> {
+    console.log("[AuthElectronService] createSession called with:", {
+      connectionId,
+      host,
+      port,
+      username,
+      hasPassword: !!password,
+    });
+
     if (!window.connection) {
+      console.error("[AuthElectronService] Connection API not available");
       return { success: false, error: "Connection API not available" };
     }
 
     try {
+      console.log("[AuthElectronService] Invoking window.connection.createSession");
       const result = await window.connection.createSession(
         connectionId,
         host,
@@ -120,9 +130,14 @@ export class AuthElectronService {
         username,
         password
       );
+      console.log("[AuthElectronService] createSession result:", result);
 
       return result;
     } catch (error) {
+      console.error("[AuthElectronService] createSession error:", {
+        error,
+        message: error instanceof Error ? error.message : String(error),
+      });
       return {
         success: false,
         error: error instanceof Error ? error.message : "Failed to create session",

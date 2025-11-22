@@ -20,7 +20,15 @@ export class SessionManager {
     }
 
     async connectSSH(password: string): Promise<void> {
+        console.log("[SessionManager] connectSSH called for session:", this.session?.connectionId);
         if (!this.session) throw new Error("No active session");
+
+        console.log("[SessionManager] SSH connection config:", {
+            host: this.session.host,
+            port: this.session.port,
+            username: this.session.username,
+            hasPassword: !!password,
+        });
 
         const config: SSHConnectionConfig = {
             host: this.session.host,
@@ -29,9 +37,11 @@ export class SessionManager {
             password,
         };
 
+        console.log("[SessionManager] Creating SSHConnectionService instance");
         this.sshConnection = new SSHConnectionService(this.session.connectionId, config);
 
         this.sshConnection.on("ready", () => {
+            console.log("[SessionManager] SSH 'ready' event received");
             if (this.session) {
                 this.session.state = "connected";
                 this.session.connectedAt = Date.now();
@@ -39,6 +49,7 @@ export class SessionManager {
         });
 
         this.sshConnection.on("error", (error: Error) => {
+            console.error("[SessionManager] SSH 'error' event:", error.message);
             if (this.session) {
                 this.session.state = "error";
                 this.session.error = error.message;
@@ -46,24 +57,34 @@ export class SessionManager {
         });
 
         this.sshConnection.on("close", () => {
+            console.log("[SessionManager] SSH 'close' event received");
             if (this.session) {
                 this.session.state = "disconnecting";
             }
         });
 
         this.sshConnection.on("end", () => {
+            console.log("[SessionManager] SSH 'end' event received");
             if (this.session) {
                 this.session.state = "idle";
             }
         });
 
+        console.log("[SessionManager] Setting connection state to 'connecting'");
         this.setConnectionState("connecting");
 
         try {
+            console.log("[SessionManager] Calling sshConnection.connect()...");
             await this.sshConnection.connect();
+            console.log("[SessionManager] SSH connection established successfully");
             this.session.sshClient = this.sshConnection.getClient();
             this.setConnectionState("connected");
         } catch (error) {
+            console.error("[SessionManager] SSH connection failed:", {
+                error,
+                message: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+            });
             this.setConnectionState("error", error instanceof Error ? error.message : "Connection failed");
             throw error;
         }

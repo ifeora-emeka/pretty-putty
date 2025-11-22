@@ -10,6 +10,12 @@ export interface RemoteSystemMetrics {
     diskTotal: number;
     loadAverage: number[];
     timestamp: number;
+    osName?: string;
+    uptime?: string;
+    cpuModel?: string;
+    cpuCores?: number;
+    hostname?: string;
+    kernel?: string;
 }
 
 export class SSHMetricsService {
@@ -40,10 +46,26 @@ export class SSHMetricsService {
 
     async getRemoteMetrics(client: Client): Promise<RemoteSystemMetrics> {
         try {
-            const [cpuOutput, memOutput, diskOutput] = await Promise.all([
+            const [
+                cpuOutput,
+                memOutput,
+                diskOutput,
+                osOutput,
+                uptimeOutput,
+                cpuModelOutput,
+                cpuCoresOutput,
+                hostnameOutput,
+                kernelOutput,
+            ] = await Promise.all([
                 this.execCommand(client, "top -bn1 | grep 'Cpu(s)' | awk '{print $2}' | cut -d'%' -f1 || echo '0'"),
                 this.execCommand(client, "free -b | grep Mem | awk '{print $2, $3}'"),
                 this.execCommand(client, "df -B1 / | tail -1 | awk '{print $2, $3}'"),
+                this.execCommand(client, "cat /etc/os-release | grep PRETTY_NAME | cut -d'\"' -f2 || uname -s"),
+                this.execCommand(client, "uptime -p || echo 'Unknown'"),
+                this.execCommand(client, "cat /proc/cpuinfo | grep 'model name' | head -1 | cut -d':' -f2 || echo 'Unknown'"),
+                this.execCommand(client, "nproc || grep -c processor /proc/cpuinfo"),
+                this.execCommand(client, "hostname"),
+                this.execCommand(client, "uname -r"),
             ]);
 
             const cpuUsage = this.parseCPU(cpuOutput);
@@ -64,6 +86,12 @@ export class SSHMetricsService {
                 diskTotal,
                 loadAverage,
                 timestamp: Date.now(),
+                osName: osOutput.trim(),
+                uptime: uptimeOutput.trim(),
+                cpuModel: cpuModelOutput.trim(),
+                cpuCores: parseInt(cpuCoresOutput.trim()) || 1,
+                hostname: hostnameOutput.trim(),
+                kernel: kernelOutput.trim(),
             };
         } catch (error) {
             throw new Error(`Failed to fetch remote metrics: ${error instanceof Error ? error.message : "Unknown error"}`);

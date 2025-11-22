@@ -16,6 +16,12 @@ export interface RemoteSystemMetrics {
   diskTotal: number;
   loadAverage: number[];
   timestamp: number;
+  osName?: string;
+  uptime?: string;
+  cpuModel?: string;
+  cpuCores?: number;
+  hostname?: string;
+  kernel?: string;
 }
 
 export interface OSInfo {
