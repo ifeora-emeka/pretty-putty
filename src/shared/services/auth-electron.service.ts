@@ -105,7 +105,8 @@ export class AuthElectronService {
     connectionId: string,
     host: string,
     port: number,
-    username: string
+    username: string,
+    password: string
   ): Promise<{ success: boolean; connectionId?: string; error?: string }> {
     if (!window.connection) {
       return { success: false, error: "Connection API not available" };
@@ -116,7 +117,8 @@ export class AuthElectronService {
         connectionId,
         host,
         port,
-        username
+        username,
+        password
       );
 
       return result;

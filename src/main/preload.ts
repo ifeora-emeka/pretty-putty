@@ -21,6 +21,9 @@ interface SystemAPI {
   healthCheck: (connectionId: string) => Promise<{ success: boolean; isHealthy?: boolean; metrics?: any; error?: string }>;
   clearStatus: (connectionId: string) => Promise<{ success: boolean; error?: string }>;
   clearAllStatus: () => Promise<{ success: boolean; error?: string }>;
+  getOSInfo: () => Promise<{ success: boolean; osInfo?: any; error?: string }>;
+  getHardwareInfo: () => Promise<{ success: boolean; hardwareInfo?: any; error?: string }>;
+  getRemoteMetrics: (connectionId: string) => Promise<{ success: boolean; metrics?: any; error?: string }>;
 }
 
 const systemAPI: SystemAPI = {
@@ -34,6 +37,12 @@ const systemAPI: SystemAPI = {
     ipcRenderer.invoke("system:clear-status", connectionId),
   clearAllStatus: () =>
     ipcRenderer.invoke("system:clear-all-status"),
+  getOSInfo: () =>
+    ipcRenderer.invoke("system:get-os-info"),
+  getHardwareInfo: () =>
+    ipcRenderer.invoke("system:get-hardware-info"),
+  getRemoteMetrics: (connectionId) =>
+    ipcRenderer.invoke("system:get-remote-metrics", connectionId),
 };
 
 contextBridge.exposeInMainWorld("system", systemAPI);
@@ -86,7 +95,7 @@ const storageAPI: StorageAPI = {
 contextBridge.exposeInMainWorld("storage", storageAPI);
 
 interface ConnectionAPI {
-  createSession: (connectionId: string, host: string, port: number, username: string) => Promise<{ success: boolean; connectionId?: string; error?: string }>;
+  createSession: (connectionId: string, host: string, port: number, username: string, password: string) => Promise<{ success: boolean; connectionId?: string; error?: string }>;
   getActive: () => Promise<{ success: boolean; connection?: any; error?: string }>;
   getState: (connectionId: string) => Promise<{ success: boolean; state?: any; error?: string }>;
   listAll: () => Promise<{ success: boolean; connections?: any[]; error?: string }>;
@@ -98,8 +107,8 @@ interface ConnectionAPI {
 }
 
 const connectionAPI: ConnectionAPI = {
-  createSession: (connectionId, host, port, username) =>
-    ipcRenderer.invoke("connection:create-session", { connectionId, host, port, username }),
+  createSession: (connectionId, host, port, username, password) =>
+    ipcRenderer.invoke("connection:create-session", { connectionId, host, port, username, password }),
   getActive: () =>
     ipcRenderer.invoke("connection:get-active"),
   getState: (connectionId) =>

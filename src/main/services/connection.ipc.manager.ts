@@ -19,7 +19,7 @@ export class ConnectionIpcManager {
   private setupIpcHandlers(): void {
     ipcMain.handle(
       "connection:create-session",
-      (event, data: CreateConnectionRequest) => {
+      async (event, data: CreateConnectionRequest) => {
         try {
           const session = this.connectionManager.createSession(
             data.connectionId,
@@ -28,12 +28,16 @@ export class ConnectionIpcManager {
             data.username
           );
 
+          if (data.password) {
+            await session.connectSSH(data.password);
+          }
+
           this.connectionManager.setActiveConnection(data.connectionId);
 
           return {
             success: true,
             connectionId: data.connectionId,
-            message: "Session created",
+            message: "Session created and connected",
           };
         } catch (error) {
           return {
@@ -161,12 +165,12 @@ export class ConnectionIpcManager {
 
     ipcMain.handle(
       "connection:disconnect",
-      (event, data: DisconnectRequest) => {
+      async (event, data: DisconnectRequest) => {
         try {
           const session = this.connectionManager.getSession(data.connectionId);
           if (session) {
             session.closeAllChannels();
-            session.setConnectionState("disconnecting");
+            await session.disconnectSSH();
           }
 
           this.connectionManager.removeSession(data.connectionId);

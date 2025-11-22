@@ -27,7 +27,8 @@ export const useAuthFlow = (): UseAuthFlowReturn => {
           connection.id,
           connection.host,
           connection.port,
-          connection.username
+          connection.username,
+          password
         );
 
         if (!sessionResult.success) {

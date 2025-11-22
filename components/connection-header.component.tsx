@@ -1,14 +1,17 @@
 "use client";
 
-import React from "react";
-import { ChevronDown, Cpu, HardDrive, Zap } from "lucide-react";
+import React, { useState } from "react";
+import { ChevronDown, Cpu, HardDrive, Zap, LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { Button } from "./ui/button";
 import { useConnection } from "@/src/shared/connection.context";
 import { useSystemStatus } from "@/hooks/use-system-status";
+import { useAuth } from "@/src/shared/auth.context";
 
 interface ConnectionHeaderProps {
     connectionName: string;
@@ -21,12 +24,28 @@ export const ConnectionHeaderComponent: React.FC<ConnectionHeaderProps> = ({
     host = "example.com",
     username = "admin",
 }) => {
+    const router = useRouter();
+    const { disconnect } = useAuth();
     const { connectionId } = useConnection();
-    const { metrics, isHealthy, isLoading } = useSystemStatus({
+    const { metrics, osInfo, hardwareInfo, isHealthy, isLoading } = useSystemStatus({
         connectionId,
         pollInterval: 5000,
         enabled: !!connectionId,
+        useRemote: true,
     });
+    const [isDisconnecting, setIsDisconnecting] = useState(false);
+
+    const handleDisconnect = async () => {
+        setIsDisconnecting(true);
+        try {
+            await disconnect();
+            router.push("/");
+        } catch (error) {
+            console.error("Disconnect error:", error);
+        } finally {
+            setIsDisconnecting(false);
+        }
+    };
 
     const cpu = metrics?.cpu ?? 0;
     const memory = metrics?.memory ?? 0;
@@ -46,11 +65,11 @@ export const ConnectionHeaderComponent: React.FC<ConnectionHeaderProps> = ({
                             </div>
                         </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-80">
+                    <DropdownMenuContent align="start" className="w-96 max-h-96 overflow-y-auto">
                         <div className="p-4 space-y-4">
                             <div className="space-y-2">
                                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                    System Details
+                                    System Metrics
                                 </p>
                                 <div className="grid grid-cols-3 gap-3">
                                     <div className="bg-muted rounded-lg p-3 space-y-2">
@@ -64,7 +83,7 @@ export const ConnectionHeaderComponent: React.FC<ConnectionHeaderProps> = ({
                                         <div className="w-full bg-border rounded-full h-1">
                                             <div
                                                 className="h-full bg-primary rounded-full transition-all"
-                                                style={{ width: `${disk}%` }}
+                                                style={{ width: `${cpu}%` }}
                                             />
                                         </div>
                                     </div>
@@ -81,7 +100,7 @@ export const ConnectionHeaderComponent: React.FC<ConnectionHeaderProps> = ({
                                         </p>
                                         <div className="w-full bg-border rounded-full h-1">
                                             <div
-                                                className="h-full bg-primary rounded-full transition-all"
+                                                className="h-full bg-accent rounded-full transition-all"
                                                 style={{ width: `${memory}%` }}
                                             />
                                         </div>
@@ -119,6 +138,77 @@ export const ConnectionHeaderComponent: React.FC<ConnectionHeaderProps> = ({
                                     </div>
                                 </div>
                             </div>
+
+                            {osInfo && (
+                                <div className="pt-2 border-t border-border">
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                                        Operating System
+                                    </p>
+                                    <div className="space-y-1 text-xs">
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Type</span>
+                                            <span className="text-foreground font-medium">{osInfo.type}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Platform</span>
+                                            <span className="text-foreground font-medium">{osInfo.platform}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Release</span>
+                                            <span className="text-foreground font-medium text-right">{osInfo.release}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Architecture</span>
+                                            <span className="text-foreground font-medium">{osInfo.arch}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Hostname</span>
+                                            <span className="text-foreground font-medium">{osInfo.hostname}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {hardwareInfo && (
+                                <div className="pt-2 border-t border-border">
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                                        Hardware
+                                    </p>
+                                    <div className="space-y-1 text-xs">
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">CPU</span>
+                                            <span className="text-foreground font-medium text-right">{hardwareInfo.cpuModel}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Cores</span>
+                                            <span className="text-foreground font-medium">{hardwareInfo.cpuCores}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Total RAM</span>
+                                            <span className="text-foreground font-medium">{hardwareInfo.totalMemory} GB</span>
+                                        </div>
+                                        {hardwareInfo.networkInterfaces.length > 0 && (
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Network</span>
+                                                <span className="text-foreground font-medium text-right">
+                                                    {hardwareInfo.networkInterfaces[0].address}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                className="w-full mt-4"
+                                onClick={handleDisconnect}
+                                disabled={isDisconnecting}
+                            >
+                                <LogOut className="w-4 h-4 mr-2" />
+                                {isDisconnecting ? "Disconnecting..." : "Disconnect"}
+                            </Button>
                         </div>
                     </DropdownMenuContent>
                 </DropdownMenu>

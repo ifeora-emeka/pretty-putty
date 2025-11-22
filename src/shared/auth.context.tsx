@@ -14,6 +14,7 @@ interface AuthContextType {
   saveConnection: (connection: StoredConnection, credentials: { password: string; rememberFor24h: boolean }) => Promise<void>;
   deleteConnection: (connectionId: string) => Promise<void>;
   logout: () => void;
+  disconnect: () => Promise<void>;
   connect: (connection: StoredConnection, password: string, rememberFor24h: boolean) => Promise<void>;
   getStoredPassword: (connectionId: string) => Promise<string | null>;
 }
@@ -70,7 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const deleteConnection = useCallback(async (connectionId: string) => {
     if (typeof window !== 'undefined' && window.storage) {
       await AuthElectronService.deleteConnection(connectionId);
-      
+
       const allConnections = await AuthElectronService.loadAllConnections();
       setConnections(allConnections);
     }
@@ -90,12 +91,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setIsLoading(true);
     try {
       await AuthElectronService.saveConnectionToStorage(connection, password, rememberFor24h);
-      
+
       const sessionResult = await AuthElectronService.createSession(
         connection.id,
         connection.host,
         connection.port,
-        connection.username
+        connection.username,
+        password
       );
 
       if (!sessionResult.success) {
@@ -103,7 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       await AuthElectronService.updateLastConnected(connection.id);
-      
+
       setIsAuthenticated(true);
       setSelectedConnection(connection);
     } catch (error) {
@@ -113,6 +115,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setIsLoading(false);
     }
   }, []);
+
+  const disconnect = useCallback(async () => {
+    try {
+      if (selectedConnection?.id && typeof window !== 'undefined' && window.connection) {
+        await AuthElectronService.disconnectSession(selectedConnection.id);
+      }
+    } catch (error) {
+      console.error("Disconnect failed:", error);
+    } finally {
+      setIsAuthenticated(false);
+      setSelectedConnection(null);
+    }
+  }, [selectedConnection?.id]);
 
   const logout = useCallback(() => {
     setIsAuthenticated(false);
@@ -130,6 +145,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         saveConnection,
         deleteConnection,
         logout,
+        disconnect,
         connect,
         getStoredPassword,
       }}

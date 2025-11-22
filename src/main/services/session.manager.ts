@@ -1,8 +1,10 @@
 import { ConnectionSession, OpenChannel, ChannelType, ConnectionState } from "../types.connection";
+import { SSHConnectionService, SSHConnectionConfig } from "./ssh-connection.service";
 import { v4 as uuidv4 } from "uuid";
 
 export class SessionManager {
     private session: ConnectionSession | null = null;
+    private sshConnection: SSHConnectionService | null = null;
 
     createSession(connectionId: string, host: string, port: number, username: string): ConnectionSession {
         this.session = {
@@ -15,6 +17,72 @@ export class SessionManager {
             channels: new Map(),
         };
         return this.session;
+    }
+
+    async connectSSH(password: string): Promise<void> {
+        if (!this.session) throw new Error("No active session");
+
+        const config: SSHConnectionConfig = {
+            host: this.session.host,
+            port: this.session.port,
+            username: this.session.username,
+            password,
+        };
+
+        this.sshConnection = new SSHConnectionService(this.session.connectionId, config);
+
+        this.sshConnection.on("ready", () => {
+            if (this.session) {
+                this.session.state = "connected";
+                this.session.connectedAt = Date.now();
+            }
+        });
+
+        this.sshConnection.on("error", (error: Error) => {
+            if (this.session) {
+                this.session.state = "error";
+                this.session.error = error.message;
+            }
+        });
+
+        this.sshConnection.on("close", () => {
+            if (this.session) {
+                this.session.state = "disconnecting";
+            }
+        });
+
+        this.sshConnection.on("end", () => {
+            if (this.session) {
+                this.session.state = "idle";
+            }
+        });
+
+        this.setConnectionState("connecting");
+
+        try {
+            await this.sshConnection.connect();
+            this.session.sshClient = this.sshConnection.getClient();
+            this.setConnectionState("connected");
+        } catch (error) {
+            this.setConnectionState("error", error instanceof Error ? error.message : "Connection failed");
+            throw error;
+        }
+    }
+
+    async disconnectSSH(): Promise<void> {
+        if (!this.sshConnection) return;
+
+        this.setConnectionState("disconnecting");
+
+        try {
+            await this.sshConnection.disconnect();
+            this.sshConnection = null;
+            this.session!.sshClient = null;
+            this.setConnectionState("idle");
+        } catch (error) {
+            console.error("Error disconnecting SSH:", error);
+            this.setConnectionState("error", error instanceof Error ? error.message : "Disconnect failed");
+        }
     }
 
     getSession(): ConnectionSession | null {
@@ -48,6 +116,17 @@ export class SessionManager {
     getSshClient(): unknown {
         if (!this.session) throw new Error("No active session");
         return this.session.sshClient;
+    }
+
+    getSSHConnection(): SSHConnectionService | null {
+        return this.sshConnection;
+    }
+
+    async executeCommand(command: string): Promise<string> {
+        if (!this.sshConnection) {
+            throw new Error("SSH connection not established");
+        }
+        return this.sshConnection.executeCommand(command);
     }
 
     setSftpClient(sftpClient: unknown): void {

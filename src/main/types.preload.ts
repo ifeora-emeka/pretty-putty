@@ -15,7 +15,7 @@ export interface StorageAPI {
 }
 
 export interface ConnectionAPI {
-  createSession: (connectionId: string, host: string, port: number, username: string) => Promise<{ success: boolean; connectionId?: string; error?: string }>;
+  createSession: (connectionId: string, host: string, port: number, username: string, password: string) => Promise<{ success: boolean; connectionId?: string; error?: string }>;
   getActive: () => Promise<{ success: boolean; connection?: any; error?: string }>;
   getState: (connectionId: string) => Promise<{ success: boolean; state?: any; error?: string }>;
   listAll: () => Promise<{ success: boolean; connections?: any[]; error?: string }>;
@@ -32,6 +32,9 @@ export interface SystemAPI {
   healthCheck: (connectionId: string) => Promise<{ success: boolean; isHealthy?: boolean; metrics?: any; error?: string }>;
   clearStatus: (connectionId: string) => Promise<{ success: boolean; error?: string }>;
   clearAllStatus: () => Promise<{ success: boolean; error?: string }>;
+  getOSInfo: () => Promise<{ success: boolean; osInfo?: any; error?: string }>;
+  getHardwareInfo: () => Promise<{ success: boolean; hardwareInfo?: any; error?: string }>;
+  getRemoteMetrics: (connectionId: string) => Promise<{ success: boolean; metrics?: any; error?: string }>;
 }
 
 export interface ElectronAPI {
