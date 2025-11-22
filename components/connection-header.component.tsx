@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { ChevronDown, Cpu, HardDrive, Zap } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { useConnection } from "@/src/shared/connection.context";
+import { useSystemStatus } from "@/hooks/use-system-status";
 
 interface ConnectionHeaderProps {
     connectionName: string;
@@ -14,22 +16,21 @@ interface ConnectionHeaderProps {
     username?: string;
 }
 
-interface SystemResources {
-    cpu: number;
-    memory: number;
-    disk: number;
-}
-
 export const ConnectionHeaderComponent: React.FC<ConnectionHeaderProps> = ({
     connectionName,
     host = "example.com",
     username = "admin",
 }) => {
-    const [resources] = useState<SystemResources>({
-        cpu: 45,
-        memory: 62,
-        disk: 78,
+    const { connectionId } = useConnection();
+    const { metrics, isHealthy, isLoading } = useSystemStatus({
+        connectionId,
+        pollInterval: 5000,
+        enabled: !!connectionId,
     });
+
+    const cpu = metrics?.cpu ?? 0;
+    const memory = metrics?.memory ?? 0;
+    const disk = metrics?.disk ?? 0;
 
     return (
         <div className="border-b border-border bg-card">
@@ -58,12 +59,12 @@ export const ConnectionHeaderComponent: React.FC<ConnectionHeaderProps> = ({
                                             <span className="text-xs text-muted-foreground">CPU</span>
                                         </div>
                                         <p className="text-2xl font-bold text-foreground">
-                                            {resources.cpu}%
+                                            {cpu}%
                                         </p>
                                         <div className="w-full bg-border rounded-full h-1">
                                             <div
-                                                className="bg-primary h-1 rounded-full transition-all"
-                                                style={{ width: `${resources.cpu}%` }}
+                                                className="h-full bg-primary rounded-full transition-all"
+                                                style={{ width: `${disk}%` }}
                                             />
                                         </div>
                                     </div>
@@ -76,12 +77,12 @@ export const ConnectionHeaderComponent: React.FC<ConnectionHeaderProps> = ({
                                             </span>
                                         </div>
                                         <p className="text-2xl font-bold text-foreground">
-                                            {resources.memory}%
+                                            {memory}%
                                         </p>
                                         <div className="w-full bg-border rounded-full h-1">
                                             <div
-                                                className="bg-accent h-1 rounded-full transition-all"
-                                                style={{ width: `${resources.memory}%` }}
+                                                className="h-full bg-primary rounded-full transition-all"
+                                                style={{ width: `${memory}%` }}
                                             />
                                         </div>
                                     </div>
@@ -92,12 +93,12 @@ export const ConnectionHeaderComponent: React.FC<ConnectionHeaderProps> = ({
                                             <span className="text-xs text-muted-foreground">Disk</span>
                                         </div>
                                         <p className="text-2xl font-bold text-foreground">
-                                            {resources.disk}%
+                                            {disk}%
                                         </p>
                                         <div className="w-full bg-border rounded-full h-1">
                                             <div
                                                 className="bg-destructive h-1 rounded-full transition-all"
-                                                style={{ width: `${resources.disk}%` }}
+                                                style={{ width: `${disk}%` }}
                                             />
                                         </div>
                                     </div>

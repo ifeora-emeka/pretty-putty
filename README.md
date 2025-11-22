@@ -1,36 +1,6 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# About Pretty Putty
+The project, “Pretty Putty”, is a polished, user-friendly re-imagining of the classic terminal tool, designed not just for SSH access but for full‐scale server management from a desktop application. Built on Electron with a modern front-end stack—Next.js, React, Tailwind CSS and the ShadCN UI system—Pretty Putty combines the power of remote shell access with a sleek graphical interface. At its heart is an always-on SSH session: when a user enters their VPS credentials, the application opens a single secure connection and then dynamically creates multiple channels—interactive shell sessions for command execution, SFTP channels for file operations, and port-forwarding tunnels for remote services—all multiplexed over that same underlying connection, giving the feel of multiple tools working in concert but without the user dealing with separate log-ins or disconnected windows.
 
-## Getting Started
+On the UI side, the application offers a familiar workspace layout: a resizable sidebar for browsing remote directories, a tabbed main panel where users can open multiple file-browser tabs, code-editor tabs, or terminal tabs, and a bottom drawer or panel for live console output. The file browser uses SFTP to list, upload, download, rename, and delete files on the remote server as easily as dragging and dropping between local and remote. Editing is seamless: double-click a configuration file and it will open either in-app using the Monaco Editor integrated into React or externally using the user’s chosen editor, with the changes saved back to the server when done. Terminal tabs are full interactive shells that mirror exactly what’s happening on the server side—running an `npm install`, seeing progress output, handling interactive prompts—while remaining within the same application window. Port-forwarding support allows tunnelling of remote services (like web UIs or databases) securely to local ports, managed from the same user interface.
 
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Session management is built for convenience: users’ login history is tracked, showing previously connected VPSs in a simple list for quick reconnection. There is an optional “remember credentials for 24 hours” feature—if selected, credentials are stored securely using the machine’s secure store and expire automatically. The design emphasizes ease of use without sacrificing flexibility: less experienced users can rely on the intuitive GUI for file uploads or tabbed navigation, while power users can open multiple terminals, customize their layout, reorder tabs, and create complex workflows across hosts. The architecture is modular, with clean separation between UI components, services handling IPC (renderer to main process), and backend logic managing SSH connections and channels. The result is a unified, streamlined experience: Pretty Putty is more than just a terminal—it is a complete remote server management tool packaged as a native desktop app, offering a friendly interface without removing any of the power that seasoned engineers expect.

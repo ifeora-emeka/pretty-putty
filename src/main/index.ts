@@ -1,8 +1,15 @@
 import { app, BrowserWindow, ipcMain } from "electron";
 import * as path from "path";
 import isDev from "electron-is-dev";
+import { StorageManager } from "./storage.manager";
+import { ConnectionIpcManager } from "./services/connection.ipc.manager";
+import { ConnectionManager } from "./services/connection.manager";
+import { SystemStatusIpcManager } from "./services/system-status.ipc.manager";
 
 let mainWindow: BrowserWindow | null = null;
+let storageManager: StorageManager | null = null;
+let connectionIpcManager: ConnectionIpcManager | null = null;
+let systemStatusIpcManager: SystemStatusIpcManager | null = null;
 
 const createWindow = () => {
     mainWindow = new BrowserWindow({
@@ -30,7 +37,12 @@ const createWindow = () => {
     });
 };
 
-app.on("ready", createWindow);
+app.on("ready", () => {
+    storageManager = new StorageManager(isDev);
+    connectionIpcManager = new ConnectionIpcManager(ConnectionManager.getInstance());
+    systemStatusIpcManager = new SystemStatusIpcManager();
+    createWindow();
+});
 
 app.on("window-all-closed", () => {
     if (process.platform !== "darwin") {

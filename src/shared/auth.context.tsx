@@ -1,21 +1,21 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
-import { Connection, StoredCredentials } from "@/__mock__/auth.mock";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { StoredConnection } from "@/src/main/types.storage";
+import { AuthElectronService } from "./services/auth-electron.service";
+import "@/src/main/types.preload";
 
 interface AuthContextType {
-  connections: Connection[];
-  selectedConnection: Connection | null;
+  connections: StoredConnection[];
+  selectedConnection: StoredConnection | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  credentials: Record<string, { password: string; rememberFor24h: boolean }>;
-  selectConnection: (connection: Connection) => void;
-  saveConnection: (connection: Connection, credentials: { password: string; rememberFor24h: boolean }) => void;
-  deleteConnection: (connectionId: string) => void;
+  selectConnection: (connection: StoredConnection) => void;
+  saveConnection: (connection: StoredConnection, credentials: { password: string; rememberFor24h: boolean }) => Promise<void>;
+  deleteConnection: (connectionId: string) => Promise<void>;
   logout: () => void;
-  connect: (connectionId: string, password: string) => Promise<void>;
-  getStoredPassword: (connectionId: string) => string | null;
-  clearStoredPassword: (connectionId: string) => void;
+  connect: (connection: StoredConnection, password: string, rememberFor24h: boolean) => Promise<void>;
+  getStoredPassword: (connectionId: string) => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,78 +23,92 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [connections, setConnections] = useState<Connection[]>([]);
-  const [selectedConnection, setSelectedConnection] = useState<Connection | null>(null);
+  const [connections, setConnections] = useState<StoredConnection[]>([]);
+  const [selectedConnection, setSelectedConnection] = useState<StoredConnection | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [credentials, setCredentials] = useState<
-    Record<string, { password: string; rememberFor24h: boolean }>
-  >({});
 
-  const selectConnection = useCallback((connection: Connection) => {
+  const loadConnections = useCallback(async () => {
+    if (typeof window !== 'undefined' && window.storage) {
+      try {
+        const allConnections = await AuthElectronService.loadAllConnections();
+        setConnections(allConnections);
+      } catch (error) {
+        console.error('Failed to load connections:', error);
+        setConnections([]);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    loadConnections();
+  }, [loadConnections]);
+
+  const selectConnection = useCallback((connection: StoredConnection) => {
     setSelectedConnection(connection);
   }, []);
 
   const saveConnection = useCallback(
-    (
-      connection: Connection,
+    async (
+      connection: StoredConnection,
       creds: { password: string; rememberFor24h: boolean }
     ) => {
-      setConnections((prev) => {
-        const exists = prev.some((c) => c.id === connection.id);
-        if (exists) {
-          return prev.map((c) =>
-            c.id === connection.id
-              ? { ...connection, hasStoredPassword: creds.rememberFor24h }
-              : c
-          );
-        }
-        return [
-          ...prev,
-          { ...connection, hasStoredPassword: creds.rememberFor24h },
-        ];
-      });
+      if (typeof window !== 'undefined' && window.storage) {
+        await AuthElectronService.saveConnectionToStorage(
+          connection,
+          creds.password,
+          creds.rememberFor24h
+        );
 
-      if (creds.rememberFor24h) {
-        setCredentials((prev) => ({
-          ...prev,
-          [connection.id]: creds,
-        }));
+        const allConnections = await AuthElectronService.loadAllConnections();
+        setConnections(allConnections);
       }
     },
     []
   );
 
-  const deleteConnection = useCallback((connectionId: string) => {
-    setConnections((prev) => prev.filter((c) => c.id !== connectionId));
-    setCredentials((prev) => {
-      const newCreds = { ...prev };
-      delete newCreds[connectionId];
-      return newCreds;
-    });
+  const deleteConnection = useCallback(async (connectionId: string) => {
+    if (typeof window !== 'undefined' && window.storage) {
+      await AuthElectronService.deleteConnection(connectionId);
+      
+      const allConnections = await AuthElectronService.loadAllConnections();
+      setConnections(allConnections);
+    }
   }, []);
 
   const getStoredPassword = useCallback(
-    (connectionId: string): string | null => {
-      const cred = credentials[connectionId];
-      return cred?.password || null;
+    async (connectionId: string): Promise<string | null> => {
+      if (typeof window !== 'undefined' && window.storage) {
+        return await AuthElectronService.loadStoredPassword(connectionId);
+      }
+      return null;
     },
-    [credentials]
+    []
   );
 
-  const clearStoredPassword = useCallback((connectionId: string) => {
-    setCredentials((prev) => {
-      const newCreds = { ...prev };
-      delete newCreds[connectionId];
-      return newCreds;
-    });
-  }, []);
-
-  const connect = useCallback(async (connectionId: string, password: string) => {
+  const connect = useCallback(async (connection: StoredConnection, password: string, rememberFor24h: boolean) => {
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await AuthElectronService.saveConnectionToStorage(connection, password, rememberFor24h);
+      
+      const sessionResult = await AuthElectronService.createSession(
+        connection.id,
+        connection.host,
+        connection.port,
+        connection.username
+      );
+
+      if (!sessionResult.success) {
+        throw new Error(sessionResult.error || "Failed to create SSH session");
+      }
+
+      await AuthElectronService.updateLastConnected(connection.id);
+      
       setIsAuthenticated(true);
+      setSelectedConnection(connection);
+    } catch (error) {
+      console.error("Connection failed:", error);
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -112,14 +126,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         selectedConnection,
         isLoading,
         isAuthenticated,
-        credentials,
         selectConnection,
         saveConnection,
         deleteConnection,
         logout,
         connect,
         getStoredPassword,
-        clearStoredPassword,
       }}
     >
       {children}

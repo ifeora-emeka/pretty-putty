@@ -9,7 +9,7 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
-
+.app-data-dev
 # testing
 /coverage
 
@@ -20,6 +20,7 @@
 # electron-builder
 /dist/
 copilot-instructions.md
+.github/copilot-instructions.md
 # production
 /build
 

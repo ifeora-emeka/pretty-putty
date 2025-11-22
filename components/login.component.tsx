@@ -2,14 +2,16 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/shared/auth.context";
-import { mockConnections, mockStoredCredentials } from "@/__mock__/auth.mock";
+import { useConnection } from "@/src/shared/connection.context";
 import { ConnectionListComponent } from "./connection-list.component";
 import { ConnectionFormComponent } from "./connection-form.component";
 
 type ViewType = "list" | "form-new" | "form-existing";
 
 export const LoginComponent: React.FC = () => {
+    const router = useRouter();
     const {
         connections,
         selectedConnection,
@@ -19,20 +21,12 @@ export const LoginComponent: React.FC = () => {
         deleteConnection,
         connect,
         getStoredPassword,
-        clearStoredPassword,
     } = useAuth();
+    
+    const { setConnectionId, setMetadata } = useConnection();
 
     const [view, setView] = useState<ViewType>("list");
-    const [isInitialized, setIsInitialized] = useState(false);
-
-    useEffect(() => {
-        if (!isInitialized && connections.length === 0) {
-            mockConnections.forEach((conn) => {
-                saveConnection(conn, { password: "", rememberFor24h: false });
-            });
-            setIsInitialized(true);
-        }
-    }, [connections.length, isInitialized, saveConnection]);
+    const [error, setError] = useState<string | null>(null);
 
     const handleSelectConnection = (connection: any) => {
         selectConnection(connection);
@@ -47,19 +41,64 @@ export const LoginComponent: React.FC = () => {
         setView("list");
     };
 
-    const handleFormSubmit = async (credentials: {
+    const handleFormSubmit = async (formData: {
+        connectionName: string;
+        host: string;
+        port: number;
+        username: string;
         password: string;
         rememberFor24h: boolean;
     }) => {
-        if (selectedConnection) {
-            await connect(selectedConnection.id, credentials.password);
-            saveConnection(selectedConnection, credentials);
+        setError(null);
+        try {
+            let connectionToUse = selectedConnection;
+            
+            if (!connectionToUse) {
+                connectionToUse = {
+                    id: `conn_${Date.now()}`,
+                    name: formData.connectionName,
+                    host: formData.host,
+                    port: formData.port,
+                    username: formData.username,
+                    lastConnected: new Date().toISOString(),
+                };
+                
+                await saveConnection(connectionToUse, {
+                    password: formData.password,
+                    rememberFor24h: formData.rememberFor24h
+                });
+            }
+            
+            await connect(connectionToUse, formData.password, formData.rememberFor24h);
+            
+            setConnectionId(connectionToUse.id);
+            setMetadata({
+                host: connectionToUse.host,
+                port: connectionToUse.port,
+                username: connectionToUse.username,
+                connectionName: connectionToUse.name,
+                connectedAt: Date.now(),
+            });
+            
+            router.push('/connection');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Connection failed");
         }
     };
 
-    const storedPassword = selectedConnection
-        ? getStoredPassword(selectedConnection.id)
-        : null;
+    const [storedPassword, setStoredPassword] = useState<string | null>(null);
+    
+    useEffect(() => {
+        const loadPassword = async () => {
+            if (selectedConnection) {
+                const password = await getStoredPassword(selectedConnection.id);
+                setStoredPassword(password);
+            } else {
+                setStoredPassword(null);
+            }
+        };
+        loadPassword();
+    }, [selectedConnection, getStoredPassword]);
 
     return (
         <div className="min-h-screen w-full flex items-center justify-center bg-background p-6">
@@ -71,7 +110,7 @@ export const LoginComponent: React.FC = () => {
                             alt="Pretty Putty Logo"
                             width={64}
                             height={64}
-                            className="rounded-lg"
+                            className="rounded-xl"
                             priority
                         />
                     </div>
@@ -81,6 +120,12 @@ export const LoginComponent: React.FC = () => {
                 
                 <div className="bg-card rounded-lg border border-border shadow-sm">
                     <div className="p-6">
+                            {error && (
+                                <div className="mb-4 p-3 bg-destructive/10 border border-destructive rounded-md">
+                                    <p className="text-sm text-destructive">{error}</p>
+                                </div>
+                            )}
+                            
                             {view === "list" && (
                                 <ConnectionListComponent
                                     connections={connections}
